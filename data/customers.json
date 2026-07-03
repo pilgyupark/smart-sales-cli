@@ -1,1 +1,8 @@
-[]
+[
+  {
+    "customer_id": "C001",
+    "customer_name": "samsung",
+    "manager_name": "hong gildong",
+    "email": "ppg1@test.com"
+  }
+]
