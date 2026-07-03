@@ -5,13 +5,11 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from utils.file_handler import load_data, save_data
 import customer_service
+import sales_report_service
 from models.customer import (
     search_customers,
 )
 from models.report import (
-    register_report,
-    list_reports,
-    update_report,
     submit_report,
     approve_report,
     reject_report,
@@ -124,18 +122,19 @@ def handle_delete_customer():
     print(message)
 
 
-def handle_register_report(reports, customers):
+def handle_register_report():
     cid = input("고객사 ID: ").strip()
     date = input("활동 날짜 (YYYY-MM-DD): ").strip()
     content = input("영업 내용: ").strip()
-    success, result = register_report(reports, customers, cid, date, content)
+    success, result = sales_report_service.register_report(cid, date, content)
     if success:
         print(f"[등록 완료] {result['report_id']} - {result['content']}")
     else:
         print(result)
 
 
-def handle_list_reports(reports):
+def handle_list_reports():
+    reports = sales_report_service.list_reports()
     if not reports:
         print("[안내] 등록된 영업일지가 없습니다.")
         return
@@ -144,11 +143,11 @@ def handle_list_reports(reports):
         print_report_row(r)
 
 
-def handle_update_report(reports):
+def handle_update_report():
     rid = input("영업일지 ID: ").strip()
     date = input("새 활동 날짜 (YYYY-MM-DD): ").strip()
     content = input("새 영업 내용: ").strip()
-    success, result = update_report(reports, rid, date, content)
+    success, result = sales_report_service.update_report(rid, date, content)
     if success:
         print(f"[수정 완료] {result['report_id']}")
     else:
@@ -179,8 +178,9 @@ def handle_withdraw_report(reports):
     print(message)
 
 
-def handle_customer_summary(reports):
+def handle_customer_summary():
     """고객사별 활동 요약을 출력한다."""
+    reports = sales_report_service.list_reports()
     if not reports:
         print("[안내] 등록된 영업일지가 없습니다.")
         return
@@ -226,15 +226,12 @@ def handle_export_csv():
 
 
 def main():
-    reports = load_data(REPORT_FILE)
-
     while True:
         print_menu()
         choice = input("메뉴 선택: ").strip()
 
         if choice == "0":
-            save_data(REPORT_FILE, reports)
-            print("[종료] 데이터가 저장되었습니다.")
+            print("[종료] 프로그램을 종료합니다.")
             break
         elif choice == "1":
             handle_register_customer()
@@ -249,21 +246,21 @@ def main():
         elif choice == "6":
             handle_delete_customer()
         elif choice == "7":
-            handle_register_report(reports, customer_service.list_customers())
+            handle_register_report()
         elif choice == "8":
-            handle_list_reports(reports)
+            handle_list_reports()
         elif choice == "9":
-            handle_update_report(reports)
+            handle_update_report()
         elif choice == "10":
-            handle_submit_report(reports)
+            handle_submit_report(sales_report_service.list_reports())
         elif choice == "11":
-            handle_approve_report(reports)
+            handle_approve_report(sales_report_service.list_reports())
         elif choice == "12":
-            handle_reject_report(reports)
+            handle_reject_report(sales_report_service.list_reports())
         elif choice == "13":
-            handle_withdraw_report(reports)
+            handle_withdraw_report(sales_report_service.list_reports())
         elif choice == "14":
-            handle_customer_summary(reports)
+            handle_customer_summary()
         elif choice == "15":
             handle_export_csv()
         else:
