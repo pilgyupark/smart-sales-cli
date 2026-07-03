@@ -4,13 +4,9 @@ import os
 sys.path.insert(0, os.path.dirname(__file__))
 
 from utils.file_handler import load_data, save_data
+import customer_service
 from models.customer import (
-    register_customer,
-    list_customers,
-    get_customer,
     search_customers,
-    update_customer,
-    delete_customer,
 )
 from models.report import (
     register_report,
@@ -67,18 +63,19 @@ def print_report_row(r):
           f"{r['activity_date']:<12} {r['content']:<20} {r['status']:<12}")
 
 
-def handle_register_customer(customers):
+def handle_register_customer():
     name = input("고객사명: ").strip()
     manager = input("담당자명: ").strip()
     email = input("이메일: ").strip()
-    success, result = register_customer(customers, name, manager, email)
+    success, result = customer_service.register_customer(name, manager, email)
     if success:
         print(f"[등록 완료] {result['customer_id']} - {result['customer_name']}")
     else:
         print(result)
 
 
-def handle_list_customers(customers):
+def handle_list_customers():
+    customers = customer_service.list_customers()
     if not customers:
         print("[안내] 등록된 고객사가 없습니다.")
         return
@@ -87,7 +84,8 @@ def handle_list_customers(customers):
         print_customer_row(c)
 
 
-def handle_search_customer(customers):
+def handle_search_customer():
+    customers = customer_service.list_customers()
     keyword = input("검색어 (고객사명/담당자명/이메일): ").strip()
     results = search_customers(customers, keyword)
     if not results:
@@ -98,9 +96,9 @@ def handle_search_customer(customers):
         print_customer_row(c)
 
 
-def handle_get_customer(customers):
+def handle_get_customer():
     cid = input("고객사 ID: ").strip()
-    customer = get_customer(customers, cid)
+    customer = customer_service.get_customer(cid)
     if customer is None:
         print("[오류] 존재하지 않는 고객사 ID입니다.")
         return
@@ -108,21 +106,21 @@ def handle_get_customer(customers):
     print_customer_row(customer)
 
 
-def handle_update_customer(customers):
+def handle_update_customer():
     cid = input("고객사 ID: ").strip()
     name = input("새 고객사명: ").strip()
     manager = input("새 담당자명: ").strip()
     email = input("새 이메일: ").strip()
-    success, result = update_customer(customers, cid, name, manager, email)
+    success, result = customer_service.update_customer(cid, name, manager, email)
     if success:
         print(f"[수정 완료] {result['customer_id']} - {result['customer_name']}")
     else:
         print(result)
 
 
-def handle_delete_customer(customers):
+def handle_delete_customer():
     cid = input("고객사 ID: ").strip()
-    success, message = delete_customer(customers, cid)
+    success, message = customer_service.delete_customer(cid)
     print(message)
 
 
@@ -181,7 +179,7 @@ def handle_withdraw_report(reports):
     print(message)
 
 
-def handle_customer_summary(reports, customers):
+def handle_customer_summary(reports):
     """고객사별 활동 요약을 출력한다."""
     if not reports:
         print("[안내] 등록된 영업일지가 없습니다.")
@@ -190,7 +188,7 @@ def handle_customer_summary(reports, customers):
     for r in reports:
         cid = r["customer_id"]
         if cid not in summary:
-            customer = get_customer(customers, cid)
+            customer = customer_service.get_customer(cid)
             name = customer["customer_name"] if customer else cid
             summary[cid] = {"name": name, "total": 0, "draft": 0,
                             "submitted": 0, "approved": 0, "rejected": 0}
@@ -208,9 +206,10 @@ def handle_customer_summary(reports, customers):
               f"{data['approved']:<10} {data['rejected']:<10}")
 
 
-def handle_export_csv(customers):
+def handle_export_csv():
     """고객사 목록을 CSV로 내보낸다."""
     import csv
+    customers = customer_service.list_customers()
     export_dir = "exports"
     os.makedirs(export_dir, exist_ok=True)
     path = os.path.join(export_dir, "customers.csv")
@@ -227,7 +226,6 @@ def handle_export_csv(customers):
 
 
 def main():
-    customers = load_data(CUSTOMER_FILE)
     reports = load_data(REPORT_FILE)
 
     while True:
@@ -235,24 +233,23 @@ def main():
         choice = input("메뉴 선택: ").strip()
 
         if choice == "0":
-            save_data(CUSTOMER_FILE, customers)
             save_data(REPORT_FILE, reports)
             print("[종료] 데이터가 저장되었습니다.")
             break
         elif choice == "1":
-            handle_register_customer(customers)
+            handle_register_customer()
         elif choice == "2":
-            handle_list_customers(customers)
+            handle_list_customers()
         elif choice == "3":
-            handle_search_customer(customers)
+            handle_search_customer()
         elif choice == "4":
-            handle_get_customer(customers)
+            handle_get_customer()
         elif choice == "5":
-            handle_update_customer(customers)
+            handle_update_customer()
         elif choice == "6":
-            handle_delete_customer(customers)
+            handle_delete_customer()
         elif choice == "7":
-            handle_register_report(reports, customers)
+            handle_register_report(reports, customer_service.list_customers())
         elif choice == "8":
             handle_list_reports(reports)
         elif choice == "9":
@@ -266,9 +263,9 @@ def main():
         elif choice == "13":
             handle_withdraw_report(reports)
         elif choice == "14":
-            handle_customer_summary(reports, customers)
+            handle_customer_summary(reports)
         elif choice == "15":
-            handle_export_csv(customers)
+            handle_export_csv()
         else:
             print("[오류] 올바른 메뉴 번호를 입력해주세요.")
 
